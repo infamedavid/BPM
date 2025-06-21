@@ -7,7 +7,7 @@ Una serie de herramientas para el manejo de projectos audiovisuales dirigido a a
 ### 📁 Gestión de Proyecto
 - Crea una estructura de carpetas organizada desde Blender (Available on "File" Menu)
 - Define la **carpeta raíz** del proyecto (`Project Root Folder`).
-- Guarda archivos temporales dentro del árbol del proyecto con un solo botón.
+- Guarda archivos temporales dentro del árbol del proyecto.
 
 ### 🖼️ Administración de Texturas
 - Mueve todas las texturas utilizadas a la carpeta activa (`//textures`) con un clic.
