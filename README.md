@@ -1,4 +1,4 @@
-# BPM: Project Manager Survival Kit for Blender
+# Project Manager Survival Kit for Blender
 
 ## 0 · Why does structure matter?
 
