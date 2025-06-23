@@ -138,7 +138,7 @@ Example:
 ### 3.3 Survival Checklist
 
 * [ ] Define project root with BPM at the start
-* [ ] Don’t move files using OS file explorer
+* [ ] Avoid to move files using OS file explorer
 * [ ] Use relative paths
 * [ ] Set high Save Versions in preferences
 * [ ] Use Fake User for important data-blocks
