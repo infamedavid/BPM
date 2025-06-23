@@ -1,3 +1,6 @@
+![BPM](https://github.com/infamedavid/BPM/blob/main/BPM.png?raw=true)
+
+
 # Project Manager Survival Kit for Blender
 
 ## 0 · Why does structure matter?
