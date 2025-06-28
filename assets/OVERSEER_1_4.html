@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>BPM CSV_VIEWER</title>
+  <style>
+    body {
+      font-family: Monospace;
+      padding: 1em;
+      background-color: #e0dbcc;
+      color: #292929;
+    }
+    table {
+      border-collapse: collapse;
+      margin-top: 1em;
+      width: 100%;
+    }
+    th, td {
+      border: 1px solid #999;
+      padding: 0.5em;
+    }
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 1em;
+      flex-wrap: wrap;
+    }
+    .filename {
+      margin-top: 0.5em;
+      font-weight: bold;
+    }
+    button,
+    input[type="file"]::file-selector-button {
+      font-family: inherit;
+      font-size: 1em;
+      padding: 0.4em 0.8em;
+      cursor: pointer;
+      border-radius: 6px;
+      border: none;
+      background-color: #d6d6d6;
+      color: #000;
+    }
+    input[type="file"] {
+      font-size: 1em;
+    }
+    .icon {
+      font-weight: bold;
+      font-size: 1.2em;
+      display: inline-block;
+      text-align: center;
+      width: 100%;
+    }
+    .check-cell {
+      text-align: center;
+    }
+    .report-section {
+      margin-top: 2em;
+      position: relative;
+      border: 1px solid #aaa;
+      padding: 1em;
+      background-color: #fdfdfb;
+    }
+    .report-title {
+      font-weight: bold;
+      font-size: 1.1em;
+      margin-bottom: 0.3em;
+    }
+    .report-actions {
+      margin-top: 0;
+      margin-bottom: 0.8em;
+      display: flex;
+      gap: 0.5em;
+    }
+    .visibility-controls {
+      display: flex;
+      gap: 0.5em;
+      margin-top: 1em;
+      flex-wrap: wrap;
+    }
+    @media print {
+      button,
+      .controls,
+      .report-actions,
+      #filename,
+      .visibility-controls {
+        display: none !important;
+      }
+    }
+    .hide-col-checked .col-checked,
+    .hide-col-note .col-note,
+    .hide-col-assignedto .col-assignedto,
+    .hide-col-location .col-location {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>👁‍🗨 OVERSEER </h1>
+  <div class="controls">
+    <input type="file" id="csvFile" accept=".csv" style="display:none" />
+    <button id="openReportBtn">OPEN REPORT</button>
+    <button id="reloadAllBtn" disabled>RELOAD ALL</button>
+    <button id="deleteAllBtn" disabled>DELETE ALL</button>
+    <button id="printBtn" disabled>PRINT</button>
+  </div>
+
+  <div class="visibility-controls">
+    <label><input type="checkbox" data-col="assignedto" checked> AssignedTo</label>
+    <label><input type="checkbox" data-col="checked" checked> Checked</label>
+    <label><input type="checkbox" data-col="location" checked> Location</label>
+    <label><input type="checkbox" data-col="note" checked> Note</label>
+  </div>
+
+  <div id="filename" class="filename">Report Name: ---</div>
+  <div id="output"></div>
+
+  <script>
+    let loadedFiles = [];
+    let reportCounter = 0;
+    const output = document.getElementById('output');
+
+    function transformarCelda(valor) {
+      const contenido = valor.trim().toLowerCase();
+      if (contenido === "true") {
+        const span = document.createElement('span');
+        span.textContent = '✔';
+        span.className = 'icon';
+        const container = document.createElement('div');
+        container.className = 'check-cell';
+        container.appendChild(span);
+        return container;
+      }
+      if (contenido === "false") {
+        const span = document.createElement('span');
+        span.textContent = '✘';
+        span.className = 'icon';
+        const container = document.createElement('div');
+        container.className = 'check-cell';
+        container.appendChild(span);
+        return container;
+      }
+      return document.createTextNode(valor.trim());
+    }
+
+    function updateColumnVisibility() {
+      const sections = document.querySelectorAll('.report-section');
+      const checkboxes = document.querySelectorAll('.visibility-controls input[type="checkbox"]');
+      sections.forEach(section => {
+        checkboxes.forEach(cb => {
+          const col = cb.getAttribute('data-col');
+          if (col) {
+            section.classList.toggle(`hide-col-${col}`, !cb.checked);
+          }
+        });
+      });
+    }
+
+    function renderReport(file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const text = e.target.result;
+        const rows = text.trim().split('\n').map(line => line.split(','));
+        const headers = rows[0];
+
+        const section = document.createElement('div');
+        section.className = 'report-section';
+
+        const title = document.createElement('div');
+        title.className = 'report-title';
+        title.textContent = `Report ${++reportCounter}: ${file.name}`;
+        section.appendChild(title);
+
+        const actions = document.createElement('div');
+        actions.className = 'report-actions';
+
+        const reloadBtn = document.createElement('button');
+        reloadBtn.textContent = 'Reload';
+        reloadBtn.onclick = () => {
+          output.removeChild(section);
+          reportCounter--;
+          renderReport(file);
+        };
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.onclick = () => {
+          output.removeChild(section);
+          // Quitar archivo del array
+          loadedFiles = loadedFiles.filter(f => !(f.name === file.name && f.size === file.size));
+          if (output.children.length === 0) {
+            document.getElementById('reloadAllBtn').disabled = true;
+            document.getElementById('deleteAllBtn').disabled = true;
+            document.getElementById('printBtn').disabled = true;
+            document.getElementById('filename').textContent = 'Report Name: ---';
+            reportCounter = 0;
+          }
+        };
+
+        actions.appendChild(reloadBtn);
+        actions.appendChild(deleteBtn);
+        section.appendChild(actions);
+
+        const table = document.createElement('table');
+        rows.forEach((row, rowIndex) => {
+          const tr = document.createElement('tr');
+          row.forEach((cell, cellIndex) => {
+            const headerName = headers[cellIndex]?.trim().toLowerCase();
+            let colClass = '';
+            if (headerName === 'assignedto') colClass = 'col-assignedto';
+            else if (headerName === 'checked') colClass = 'col-checked';
+            else if (headerName === 'note') colClass = 'col-note';
+            else if (headerName === 'location') colClass = 'col-location';
+
+            const td = document.createElement(rowIndex === 0 ? 'th' : 'td');
+            if (colClass) td.classList.add(colClass);
+            const contenido = transformarCelda(cell);
+            td.appendChild(contenido);
+            tr.appendChild(td);
+          });
+          table.appendChild(tr);
+        });
+        section.appendChild(table);
+
+        output.appendChild(section);
+        document.getElementById('reloadAllBtn').disabled = false;
+        document.getElementById('deleteAllBtn').disabled = false;
+        document.getElementById('printBtn').disabled = false;
+
+        updateColumnVisibility();
+      };
+      reader.readAsText(file);
+    }
+
+    document.querySelectorAll('.visibility-controls input[type="checkbox"]').forEach(checkbox => {
+      checkbox.addEventListener('change', updateColumnVisibility);
+    });
+
+    document.getElementById('csvFile').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      e.target.value = null;
+      // Evitar duplicados por nombre y tamaño (básico)
+      if (!loadedFiles.some(f => f.name === file.name && f.size === file.size)) {
+        loadedFiles.push(file);
+      }
+      document.getElementById('filename').textContent = `Report Name: ${file.name}`;
+      renderReport(file);
+    });
+
+    document.getElementById('openReportBtn').addEventListener('click', function(e) {
+      e.preventDefault();
+      document.getElementById('csvFile').click();
+    });
+
+    document.getElementById('reloadAllBtn').addEventListener('click', function() {
+      if (loadedFiles.length === 0) return;
+      output.innerHTML = '';
+      reportCounter = 0;
+      loadedFiles.forEach(file => renderReport(file));
+    });
+
+    document.getElementById('deleteAllBtn').addEventListener('click', function() {
+      output.innerHTML = '';
+      loadedFiles = [];
+      document.getElementById('reloadAllBtn').disabled = true;
+      document.getElementById('deleteAllBtn').disabled = true;
+      document.getElementById('printBtn').disabled = true;
+      document.getElementById('filename').textContent = 'Report Name: ---';
+      reportCounter = 0;
+    });
+
+    document.getElementById('printBtn').addEventListener('click', function() {
+      window.print();
+    });
+  </script>
+
+</body>
+</html>
